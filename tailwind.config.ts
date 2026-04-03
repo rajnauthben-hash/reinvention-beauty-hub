@@ -12,8 +12,19 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      display: ['Playfair Display', 'Georgia', 'serif'],
+      body: ['Inter', 'system-ui', 'sans-serif'],
+    },
     extend: {
       colors: {
+        warm: {
+          gold: "hsl(var(--warm-gold))",
+          cream: "hsl(var(--warm-cream))",
+          blush: "hsl(var(--warm-blush))",
+          mocha: "hsl(var(--deep-mocha))",
+        },
+        charcoal: "hsl(var(--charcoal))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
