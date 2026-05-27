@@ -234,20 +234,40 @@ export default function Admin() {
     event.preventDefault();
     setSigningIn(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    setSigningIn(false);
+      if (error) {
+        const isNetworkError =
+          error.message.toLowerCase().includes("fetch") ||
+          error.message.toLowerCase().includes("network") ||
+          error.message.toLowerCase().includes("failed to");
 
-    if (error) {
-      toast.error(error.message);
-      return;
+        toast.error(
+          isNetworkError
+            ? "Unable to reach the server. The service may be temporarily unavailable — please try again in a moment."
+            : error.message
+        );
+        return;
+      }
+
+      setPassword("");
+      toast.success("Admin access unlocked.");
+    } catch (err) {
+      const isNetworkError =
+        err instanceof TypeError && err.message.toLowerCase().includes("fetch");
+
+      toast.error(
+        isNetworkError
+          ? "Unable to reach the server. The service may be temporarily unavailable — please try again in a moment."
+          : "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setSigningIn(false);
     }
-
-    setPassword("");
-    toast.success("Admin access unlocked.");
   };
 
   const handleSignOut = async () => {
