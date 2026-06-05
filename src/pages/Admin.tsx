@@ -149,19 +149,23 @@ export default function Admin() {
 
     setLoadingInquiries(true);
 
-    const { data, error } = await supabase
-      .from("appointment_inquiries")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("appointment_inquiries")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    setLoadingInquiries(false);
+      if (error) {
+        toast.error("Could not load booking data. Make sure your account is registered as an admin in the database.");
+        return;
+      }
 
-    if (error) {
-      toast.error("Your account can sign in, but it is not allowed to view admin booking data yet.");
-      return;
+      setInquiries(data ?? []);
+    } catch {
+      toast.error("Network error while loading bookings. Please refresh and try again.");
+    } finally {
+      setLoadingInquiries(false);
     }
-
-    setInquiries(data ?? []);
   };
 
   useEffect(() => {
@@ -251,6 +255,15 @@ export default function Admin() {
             ? "Unable to reach the server. The service may be temporarily unavailable — please try again in a moment."
             : error.message
         );
+        return;
+      }
+
+      // Verify the signed-in user is actually registered as an admin
+      const { data: isAdmin, error: adminCheckError } = await supabase.rpc("is_admin");
+
+      if (adminCheckError || !isAdmin) {
+        await supabase.auth.signOut();
+        toast.error("This account is not registered as an admin. Contact the site owner to request access.");
         return;
       }
 
