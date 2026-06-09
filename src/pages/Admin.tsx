@@ -176,6 +176,24 @@ export default function Admin() {
     }
 
     void loadInquiries();
+
+    // Live updates — new bookings appear automatically without a manual refresh
+    const channel = supabase
+      .channel("appointment_inquiries_live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "appointment_inquiries" },
+        (payload) => {
+          const newInquiry = payload.new as Inquiry;
+          setInquiries((current) => [newInquiry, ...current]);
+          toast.info(`New booking from ${newInquiry.name} — ${newInquiry.service}`);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [session]);
 
   const searchTerm = deferredSearch.trim().toLowerCase();
@@ -321,6 +339,26 @@ export default function Admin() {
     }
 
     setInquiries((current) => current.map((inquiry) => (inquiry.id === data.id ? data : inquiry)));
+
+    // Send a confirmation email to the client when their status is set to confirmed
+    if (statusDraft === "confirmed" && activeInquiry.status !== "confirmed") {
+      supabase.functions
+        .invoke("send-email", {
+          body: {
+            type: "booking_confirmed",
+            booking: {
+              name: data.name,
+              email: data.email,
+              phone: data.phone,
+              service: data.service,
+              preferred_date: data.preferred_date,
+              message: data.message,
+            },
+          },
+        })
+        .catch(() => {});
+    }
+
     toast.success("Booking request updated.");
   };
 
