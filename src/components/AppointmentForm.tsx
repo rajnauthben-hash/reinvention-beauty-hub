@@ -38,16 +38,23 @@ const AppointmentForm = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("appointment_inquiries").insert({
+      const booking = {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         service: formData.service,
         preferred_date: formData.date || null,
         message: formData.message.trim() || null,
-      });
+      };
+
+      const { error } = await supabase.from("appointment_inquiries").insert(booking);
 
       if (error) throw error;
+
+      // Send confirmation to client + alert to admin (non-blocking)
+      supabase.functions
+        .invoke("send-email", { body: { type: "new_booking", booking } })
+        .catch(() => {});
 
       toast.success("Your appointment request has been submitted! We'll be in touch shortly.");
       setFormData({ name: "", email: "", phone: "", service: "", date: "", message: "" });
